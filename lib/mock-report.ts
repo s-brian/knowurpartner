@@ -2,7 +2,7 @@ import type { Report } from "@/types/report";
 
 export const mockReport: Report = {
   id: "00000000-0000-4000-8000-000000000001",
-  title: "Partner Relationship Snapshot",
+  title: "A letter for you, from what they shared",
   labels: {
     attachmentTendency: {
       value: "secure",
@@ -23,36 +23,36 @@ export const mockReport: Report = {
   },
   narrativeSections: {
     whenStressed:
-      "Your responses suggest they may feel most supported when you stay steady, check in directly, and offer help without taking over.",
+      "They sound like someone who settles when you stay steady: a clear check-in, a little help offered without taking the whole thing out of their hands.",
     whenDistant:
-      "When they seem distant, they may be trying to settle their thoughts before talking. A gentle invitation can work better than pressing for an immediate answer.",
+      "If they go quiet, it might be their way of sorting thoughts before words. A soft invite to talk later can land better than a push for an answer right now.",
     whatMakesThemFeelLoved:
-      "They may feel especially loved through protected time together, thoughtful follow-through, and small signs that you were listening.",
+      "Protected time together, small follow-throughs, and proof you were listening seem to matter a lot. The little repeats of care add up fast.",
     inConflict:
-      "In conflict, your responses suggest they are likely to respond well to calm language, clear repair attempts, and a shared focus on what happens next.",
+      "Calm wording, a real repair gesture, and a shared look at what happens next seem to help them come back to center.",
     emotionalSafety:
-      "Emotional safety may look like consistency, room to be honest, and knowing that difficult moments will not erase the care between you.",
+      "Consistency, room to be honest, and the sense that a rough day does not erase the love between you are probably big pieces of what safe feels like.",
     culturalContext:
-      "Their answers may reflect personal, family, or cultural expectations around privacy, care, and communication. Treat this as a conversation starter rather than a fixed conclusion."
+      "Their answers may carry family or cultural expectations around privacy, care, and how people show up for each other. Hold this as a starting place for curiosity, not a final read."
   },
   partnerCheatSheet: {
     doThis: [
-      "Name your care clearly and specifically.",
-      "Make time together feel intentional.",
-      "Return to hard conversations after everyone has had time to settle."
+      "Say what you feel in plain words when you can.",
+      "Carve out time that feels intentional, even if it is small.",
+      "Circle back after hard talks once everyone has had a breath."
     ],
     avoidThis: [
-      "Do not treat quietness as proof they do not care.",
-      "Do not rush repair before they feel heard.",
-      "Do not turn a need for reassurance into a debate."
+      "Reading silence as proof they stopped caring.",
+      "Rushing repair before they feel met in what hurt.",
+      "Turning a need for reassurance into something to win or lose."
     ],
     inConflictDo:
-      "Slow the conversation down, reflect what you heard, and agree on one concrete next step.",
+      "Slow it down, play back what you heard, and pick one doable next step together.",
     toShowLoveDo:
-      "Plan simple quality time and follow through on the small details you said you would handle."
+      "Keep quality time simple and show up on the tiny promises you make."
   },
   caveats: [
-    "This report is a reflective guide, not a diagnosis.",
-    "Use it to start a conversation with your partner, not to label them permanently."
+    "This is a mirror for reflection, not a label from a clinician.",
+    "Let it open a conversation between you, not a box you put them in forever."
   ]
 };
