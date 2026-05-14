@@ -36,6 +36,7 @@ const OptionalNameSchema = z
   .max(60)
   .optional()
   .or(z.literal("").transform(() => undefined));
+const AnswerSchema = z.string().max(4000);
 
 const LabelWithConfidenceSchema = <TValue extends z.ZodEnum<[string, ...string[]]>>(
   valueSchema: TValue
@@ -52,7 +53,7 @@ const LabelWithConfidenceSchema = <TValue extends z.ZodEnum<[string, ...string[]
 
 export const GenerateRequestSchema = z.object({
   answers: z
-    .array(z.string())
+    .array(AnswerSchema)
     .length(10, "Exactly 10 answers are required."),
   includeOriginalAnswers: z.boolean().optional().default(false),
   recipientName: OptionalNameSchema,
@@ -65,6 +66,7 @@ export const ReportSchema: z.ZodType<Report, z.ZodTypeDef, unknown> = z.object({
   recipientName: OptionalNameSchema,
   senderName: OptionalNameSchema,
   outputLanguage: SupportedLanguageSchema.optional().default("english"),
+  generatedByModel: z.string().optional(),
   title: z.string(),
   labels: z.object({
     attachmentTendency: LabelWithConfidenceSchema(AttachmentTendencySchema),

@@ -4,11 +4,13 @@ import { type ReactNode, useState } from "react";
 
 type RelationshipPatternValueRevealProps = {
   children: ReactNode;
+  description: string;
   label: string;
 };
 
 export function RelationshipPatternValueReveal({
   children,
+  description,
   label
 }: RelationshipPatternValueRevealProps) {
   const [revealed, setRevealed] = useState(false);
@@ -16,12 +18,18 @@ export function RelationshipPatternValueReveal({
   return (
     <span className="relative inline-block min-w-[9rem] align-baseline">
       <span
-        className={`transition-opacity duration-300 ${
+        className={`group/revealed relative inline-block cursor-help transition-opacity duration-300 ${
           revealed ? "opacity-100" : "opacity-0"
         }`}
         aria-hidden={!revealed}
+        tabIndex={revealed ? 0 : -1}
       >
         {children}
+        {revealed ? (
+          <span className="pointer-events-none absolute left-0 top-full z-30 mt-2 hidden w-64 rounded-sm border border-paper-line bg-[#fffef9] px-3 py-2 text-left text-sm font-light normal-case leading-snug text-paper-ink shadow-lift group-hover/revealed:block group-focus/revealed:block">
+            {description}
+          </span>
+        ) : null}
       </span>
 
       {!revealed ? (

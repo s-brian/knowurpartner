@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { generateReportWithGemini } from "@/lib/gemini";
 import { getLocalizedQuestions } from "@/lib/languages";
 import { questions } from "@/lib/questions";
+import { checkGenerateRateLimit } from "@/lib/rate-limit";
 import { GenerateRequestSchema } from "@/lib/schema";
 import { supabase } from "@/lib/supabase";
 import type { Report } from "@/types/report";
@@ -12,7 +13,35 @@ type GenerateResponse = {
 };
 
 export async function POST(request: Request) {
-  const body: unknown = await request.json();
+  const rateLimit = checkGenerateRateLimit(request);
+
+  if (!rateLimit.allowed) {
+    return NextResponse.json(
+      {
+        error: "Too many report requests. Please wait a moment and try again."
+      },
+      {
+        status: 429,
+        headers: {
+          "Retry-After": String(rateLimit.retryAfterSeconds)
+        }
+      }
+    );
+  }
+
+  let body: unknown;
+
+  try {
+    body = await request.json();
+  } catch {
+    return NextResponse.json(
+      {
+        error: "Invalid JSON body"
+      },
+      { status: 400 }
+    );
+  }
+
   const requestResult = GenerateRequestSchema.safeParse(body);
 
   if (!requestResult.success) {

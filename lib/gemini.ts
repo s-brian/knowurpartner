@@ -71,6 +71,8 @@ certaintyPercent must be an integer from 0 to 99. It means evidence strength,
 not factual accuracy. Use 0-40 for weak evidence, 41-70 for moderate evidence,
 and 71-90 for strong evidence. Never use 100.
 Keep narrative section values to 1-2 warm, specific sentences each.
+Use casual, everyday wording. Write like one caring person explaining this to
+another caring person, not like a formal assessment.
 Use exactly 3 doThis items, exactly 3 avoidThis items, and exactly 2 caveats.
 `;
 
@@ -137,7 +139,9 @@ function buildUserPrompt(answers: string[], options: GenerateReportOptions = {})
 }
 
 function extractJsonObject(text: string) {
-  console.error("Gemini raw response:", text);
+  if (process.env.NODE_ENV !== "production") {
+    console.error("Gemini raw response:", text);
+  }
 
   const start = text.indexOf("{");
   const end = text.lastIndexOf("}");
@@ -149,7 +153,9 @@ function extractJsonObject(text: string) {
   }
 
   const extracted = text.slice(start, end + 1);
-  console.error("Gemini extracted JSON:", extracted);
+  if (process.env.NODE_ENV !== "production") {
+    console.error("Gemini extracted JSON:", extracted);
+  }
   return extracted;
 }
 
@@ -202,7 +208,10 @@ async function generateRawReportText(
     }
   });
 
-  return result.response.text();
+  return {
+    text: result.response.text(),
+    modelName
+  };
 }
 
 async function generateRawReportTextWithFallback(
@@ -246,14 +255,15 @@ export async function generateReportWithGemini(
       throw new Error("Missing GEMINI_API_KEY.");
     }
 
-    const rawText = await generateRawReportTextWithFallback(
+    const generated = await generateRawReportTextWithFallback(
       apiKey,
       answers,
       options
     );
-    const parsed = parseReportJson(rawText);
+    const parsed = parseReportJson(generated.text);
     const reportResult = ReportSchema.safeParse({
       ...(parsed as object),
+      generatedByModel: generated.modelName,
       id: crypto.randomUUID()
     });
 

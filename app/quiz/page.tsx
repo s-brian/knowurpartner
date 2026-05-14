@@ -661,7 +661,7 @@ export default function QuizPage() {
 
               <div
                 className={`relative mt-8 flex flex-wrap justify-between gap-4 border-t border-dashed border-paper-line pt-6 ${
-                  isLastQuestion ? "min-h-[8.25rem] items-end" : "items-center"
+                  isLastQuestion ? "min-h-[9.75rem] items-end" : "items-center"
                 }`}
               >
                 <button
@@ -704,7 +704,7 @@ export default function QuizPage() {
                           />
                         </label>
                       </div>
-                      <label className="absolute right-0 top-5 flex max-w-[9rem] items-center gap-2 text-right text-sm leading-snug text-paper-muted">
+                      <label className="absolute right-0 top-5 flex max-w-[9.5rem] items-start gap-2 text-right text-sm leading-snug text-paper-muted">
                         <span>{copy.includeOriginalAnswer}</span>
                         <input
                           type="checkbox"
@@ -717,12 +717,12 @@ export default function QuizPage() {
                         />
                       </label>
                     </div>
-                    <div className="flex items-center justify-end">
+                    <div className="absolute bottom-0 right-0 flex items-center justify-end">
                       <button
                         type="button"
                         onClick={() => void submitAnswers()}
                         disabled={isSubmitting || pageTurnLocked}
-                        className="max-w-[9.5rem] rounded-full border-2 border-paper-ink bg-paper-ink px-5 py-2 text-center text-lg leading-tight text-paper-cream shadow-lift transition enabled:hover:-translate-y-0.5 enabled:hover:bg-paper-ink/90 disabled:cursor-not-allowed disabled:opacity-50"
+                        className="min-h-[4.75rem] w-[9.75rem] rounded-full border-2 border-paper-ink bg-paper-ink px-5 py-2 text-center text-lg leading-tight text-paper-cream shadow-lift transition enabled:hover:-translate-y-0.5 enabled:hover:bg-paper-ink/90 disabled:cursor-not-allowed disabled:opacity-50"
                       >
                         {isSubmitting ? copy.submitting : copy.finish}
                       </button>

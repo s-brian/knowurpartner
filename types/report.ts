@@ -63,6 +63,7 @@ export type Report = {
   recipientName?: string;
   senderName?: string;
   outputLanguage?: SupportedLanguage;
+  generatedByModel?: string;
   title: string;
   labels: ReportLabels;
   narrativeSections: NarrativeSections;
