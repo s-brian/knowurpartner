@@ -1,3 +1,5 @@
+import type { SupportedLanguage } from "@/lib/languages";
+
 export type AttachmentTendency =
   | "secure"
   | "anxious"
@@ -58,6 +60,9 @@ export type OriginalAnswer = {
 
 export type Report = {
   id: string;
+  recipientName?: string;
+  senderName?: string;
+  outputLanguage?: SupportedLanguage;
   title: string;
   labels: ReportLabels;
   narrativeSections: NarrativeSections;

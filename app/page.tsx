@@ -1,7 +1,15 @@
 "use client";
 
+import {
+  defaultLanguage,
+  homeCopy,
+  languageLabels,
+  languageShortLabels,
+  supportedLanguages,
+  type SupportedLanguage
+} from "@/lib/languages";
 import Link from "next/link";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 
 type Point = {
   x: number;
@@ -22,6 +30,10 @@ export default function HomePage() {
   const rightCapRef = useRef<SVGCircleElement>(null);
   const rightWrist = useRef<Point | null>(null);
   const hoverFrame = useRef<number | null>(null);
+  const [outputLanguage, setOutputLanguage] =
+    useState<SupportedLanguage>(defaultLanguage);
+  const [languageMenuOpen, setLanguageMenuOpen] = useState(false);
+  const copy = homeCopy[outputLanguage];
 
   function toSvgPoint(pageX: number, pageY: number): Point {
     const svg = svgRef.current;
@@ -232,33 +244,28 @@ export default function HomePage() {
 
           <div className="relative pl-5 text-center text-paper-cream">
             <h1 className="mt-1 text-4xl leading-tight text-paper-cream sm:text-5xl">
-              Dear Partner...
+              {copy.title}
               <span className="block text-3xl text-paper-deep sm:text-4xl">
-                a way to understand me better
+                {copy.subtitle}
               </span>
             </h1>
 
             <div className="mx-auto mt-10 max-w-sm border-t border-dashed border-paper-cream/35 pt-8 text-left text-xl leading-relaxed text-paper-deep">
-              <p>
-                I'll ask you 10 questions about how you love, how you fight, and how actions make you feel.
-              </p>
-              <p className="mt-4">
-               When you're done, you'll get a shareable guide to understanding and loving you better.
-              </p>
+              <p>{copy.descriptionOne}</p>
+              <p className="mt-4">{copy.descriptionTwo}</p>
             </div>
 
             <Link
               ref={buttonRef}
-              href="/quiz"
+              href={`/quiz?language=${outputLanguage}`}
               className="mt-12 inline-block rounded-full border-2 border-paper-cream/80 bg-paper-cream px-8 py-3 text-2xl text-paper-ink shadow-lift transition hover:-translate-y-0.5 hover:bg-paper hover:shadow-sheet active:translate-y-0"
               onBlur={handleButtonLeave}
               onFocus={handleButtonEnter}
               onMouseEnter={handleButtonEnter}
               onMouseLeave={handleButtonLeave}
             >
-              Open the first page &rarr;
+              {copy.cta} &rarr;
             </Link>
-
           </div>
         </div>
 
@@ -282,9 +289,47 @@ export default function HomePage() {
         </div>
 
         <p className="mt-8 max-w-sm text-center text-lg text-paper-muted">
-          Tip: Be honest! The more information you share, the more accurate and helpful the letter will be. 
+          {copy.tip}
         </p>
       </main>
+
+      <div className="fixed bottom-5 right-5 z-40">
+        {languageMenuOpen ? (
+          <div className="mb-3 grid min-w-44 gap-1 rounded-sm border border-paper-pencil/25 bg-paper-cream/95 p-2 text-paper-ink shadow-sheet">
+            {supportedLanguages.map((language) => (
+              <button
+                key={language}
+                type="button"
+                className={`flex items-center justify-between gap-3 rounded-sm px-3 py-2 text-left text-lg transition hover:bg-paper-deep ${
+                  outputLanguage === language ? "bg-paper-deep" : ""
+                }`}
+                onClick={() => {
+                  setOutputLanguage(language);
+                  setLanguageMenuOpen(false);
+                }}
+              >
+                <span>{languageLabels[language]}</span>
+                <span className="text-paper-pencil">
+                  {languageShortLabels[language]}
+                </span>
+              </button>
+            ))}
+          </div>
+        ) : null}
+
+        <button
+          type="button"
+          className="flex h-14 w-14 items-center justify-center rounded-full border-2 border-paper-cream/80 bg-paper-ink text-xl text-paper-cream shadow-lift transition hover:-translate-y-0.5 hover:bg-paper-pencil"
+          onClick={() => setLanguageMenuOpen((open) => !open)}
+          aria-label={copy.languageMenuLabel}
+          aria-expanded={languageMenuOpen}
+        >
+          <span aria-hidden>文</span>
+          <span className="absolute -right-1 -top-1 rounded-full border border-paper-cream bg-paper-cream px-1.5 text-xs text-paper-ink">
+            {languageShortLabels[outputLanguage]}
+          </span>
+        </button>
+      </div>
 
       <svg
         ref={svgRef}

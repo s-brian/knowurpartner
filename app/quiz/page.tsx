@@ -1,8 +1,14 @@
 "use client";
 
 import { QuestionDoodle } from "@/components/QuestionDoodle";
-import { questions } from "@/lib/questions";
-import type { Question } from "@/lib/questions";
+import {
+  defaultLanguage,
+  getLocalizedQuestions,
+  parseSupportedLanguage,
+  quizCopy,
+  type LocalizedQuestion,
+  type SupportedLanguage
+} from "@/lib/languages";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { flushSync } from "react-dom";
@@ -12,12 +18,15 @@ type GenerateResponse = {
   id: string;
 };
 
+type QuizCopy = (typeof quizCopy)[SupportedLanguage];
+
 const LINE_STEP_PX = 28;
 const PAGE_TURN_DURATION_MS = 1467;
 const PAGE_FLIP_SOUND_DELAY_MS = 120;
 const PAGE_FLIP_SOUND_COOLDOWN_MS = 300;
 const NEXT_PAGE_LANDING_ANGLE_DEG = -170;
 const PREVIOUS_PAGE_LANDING_ANGLE_DEG = 170;
+const QUESTION_COUNT = getLocalizedQuestions(defaultLanguage).length;
 
 type Point = {
   x: number;
@@ -28,22 +37,26 @@ type PageTurnDirection = "next" | "back";
 
 type JournalPagePreviewProps = {
   answer: string;
+  copy: QuizCopy;
   isLastQuestion: boolean;
-  question: Question;
+  question: LocalizedQuestion;
   questionIndex: number;
+  questionsList: LocalizedQuestion[];
 };
 
 function JournalPagePreview({
   answer,
+  copy,
   isLastQuestion,
   question,
-  questionIndex
+  questionIndex,
+  questionsList
 }: JournalPagePreviewProps) {
   return (
     <div className="flex h-full min-h-0 flex-col px-6 pb-8 pt-9 sm:px-10 sm:pb-10 sm:pt-11">
       <div className="mb-6 border-b border-dashed border-paper-line pb-4">
         <h1 className="text-2xl text-paper-pencil">
-          journal entry #{question.id}:
+          {copy.journalEntry(question.id)}
         </h1>
       </div>
 
@@ -61,7 +74,7 @@ function JournalPagePreview({
           <p className="min-h-0 w-full flex-1 whitespace-pre-wrap px-3 py-2 text-xl leading-[28px] text-paper-ink sm:px-4 sm:text-2xl">
             {answer || (
               <span className="text-paper-pencil/50">
-                Sometimes I feel like...
+                {copy.answerPlaceholder}
               </span>
             )}
           </p>
@@ -69,7 +82,7 @@ function JournalPagePreview({
       </div>
 
       <div className="mt-5 flex flex-wrap gap-2">
-        {questions.map((q, i) => (
+        {questionsList.map((q, i) => (
           <span
             key={q.id}
             className={`h-3 w-3 rounded-full border border-paper-pencil/40 sm:h-3.5 sm:w-3.5 ${
@@ -85,21 +98,27 @@ function JournalPagePreview({
 
       <div className="mt-8 flex flex-wrap items-center justify-between gap-4 border-t border-dashed border-paper-line pt-6">
         <span className="rounded-full border-2 border-paper-pencil/50 px-5 py-2 text-xl text-paper-muted">
-          &larr; last page
+          &larr; {copy.lastPage}
         </span>
         <span className="rounded-full border-2 border-paper-ink bg-paper-cream px-6 py-2.5 text-xl text-paper-ink shadow-lift">
-          {isLastQuestion ? "Finish and seal" : "next page \u2192"}
+          {isLastQuestion ? copy.finish : `${copy.nextPage} \u2192`}
         </span>
       </div>
     </div>
   );
 }
 
-function DoodlePage({ questionId }: { questionId: number }) {
+function DoodlePage({
+  caption,
+  questionId
+}: {
+  caption: string;
+  questionId: number;
+}) {
   return (
     <div className="absolute inset-0 flex flex-col items-center justify-center rounded-r-md border border-paper-pencil/20 bg-gradient-to-br from-paper-deep to-paper-cream px-4 py-8 shadow-inner">
       <p className="mb-3 text-center text-lg text-paper-pencil">
-        a tiny drawing for this one
+        {caption}
       </p>
       <QuestionDoodle questionId={questionId} />
     </div>
@@ -129,24 +148,33 @@ export default function QuizPage() {
   const [handAnimating, setHandAnimating] = useState(false);
 
   const [answers, setAnswers] = useState<string[]>(
-    Array.from({ length: questions.length }, () => "")
+    Array.from({ length: QUESTION_COUNT }, () => "")
   );
   const [includeOriginalAnswers, setIncludeOriginalAnswers] = useState(true);
+  const [recipientName, setRecipientName] = useState("");
+  const [senderName, setSenderName] = useState("");
+  const [outputLanguage, setOutputLanguage] =
+    useState<SupportedLanguage>(defaultLanguage);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const currentQuestion = questions[displayIndex];
-  const isLastQuestion = displayIndex === questions.length - 1;
-  const nextQuestionIndex = Math.min(displayIndex + 1, questions.length - 1);
-  const nextQuestion = questions[nextQuestionIndex];
-  const nextQuestionIsLast = nextQuestionIndex === questions.length - 1;
+  const copy = quizCopy[outputLanguage];
+  const questionList = useMemo(
+    () => getLocalizedQuestions(outputLanguage),
+    [outputLanguage]
+  );
+  const currentQuestion = questionList[displayIndex];
+  const isLastQuestion = displayIndex === questionList.length - 1;
+  const nextQuestionIndex = Math.min(displayIndex + 1, questionList.length - 1);
+  const nextQuestion = questionList[nextQuestionIndex];
+  const nextQuestionIsLast = nextQuestionIndex === questionList.length - 1;
   const previousQuestionIndex = Math.max(displayIndex - 1, 0);
-  const previousQuestion = questions[previousQuestionIndex];
-  const previousQuestionIsLast = previousQuestionIndex === questions.length - 1;
+  const previousQuestion = questionList[previousQuestionIndex];
+  const previousQuestionIsLast = previousQuestionIndex === questionList.length - 1;
 
   const progressLabel = useMemo(
-    () => `Page ${displayIndex + 1} of ${questions.length}`,
-    [displayIndex]
+    () => copy.pageProgress(displayIndex + 1, questionList.length),
+    [copy, displayIndex, questionList.length]
   );
 
   useEffect(() => {
@@ -163,6 +191,11 @@ export default function QuizPage() {
       mq.removeEventListener("change", sync);
       motion.removeEventListener("change", sync);
     };
+  }, []);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    setOutputLanguage(parseSupportedLanguage(params.get("language")));
   }, []);
 
   const flipBook = wideBook && !prefersReducedMotion;
@@ -406,7 +439,7 @@ export default function QuizPage() {
     flushSync(() => {
       setDisplayIndex((i) =>
         direction === "next"
-          ? Math.min(i + 1, questions.length - 1)
+          ? Math.min(i + 1, questionList.length - 1)
           : Math.max(i - 1, 0)
       );
     });
@@ -475,7 +508,7 @@ export default function QuizPage() {
     setError(null);
     if (isLastQuestion) return;
     if (startPageTurn("next")) return;
-    setDisplayIndex((index) => Math.min(index + 1, questions.length - 1));
+    setDisplayIndex((index) => Math.min(index + 1, questionList.length - 1));
   }
 
   function jumpToQuestion(index: number) {
@@ -498,14 +531,18 @@ export default function QuizPage() {
         headers: {
           "Content-Type": "application/json"
         },
-        body: JSON.stringify({ answers, includeOriginalAnswers })
+        body: JSON.stringify({
+          answers,
+          includeOriginalAnswers,
+          recipientName,
+          senderName,
+          outputLanguage
+        })
       });
 
       if (!response.ok) {
-        const errorData = (await response.json().catch(() => null)) as {
-          error?: string;
-        } | null;
-        throw new Error(errorData?.error ?? "Unable to generate report.");
+        await response.json().catch(() => null);
+        throw new Error(copy.generationError);
       }
 
       const data = (await response.json()) as GenerateResponse;
@@ -514,7 +551,7 @@ export default function QuizPage() {
       const message =
         caughtError instanceof Error
           ? caughtError.message
-          : "Something went wrong.";
+          : copy.generationError;
       setError(message);
     } finally {
       setIsSubmitting(false);
@@ -532,7 +569,7 @@ export default function QuizPage() {
     }
   }
 
-  const doodleId = questions[displayIndex].id;
+  const doodleId = questionList[displayIndex].id;
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#e8dcc4] via-paper-deep to-[#dcccb8] px-3 py-8 sm:px-6 sm:py-10">
@@ -542,7 +579,7 @@ export default function QuizPage() {
             href="/"
             className="shrink-0 text-lg text-paper-muted underline decoration-paper-line decoration-2 underline-offset-4 hover:text-paper-ink"
           >
-            ← cover
+            ← {copy.cover}
           </Link>
           <p className="text-right text-lg text-paper-pencil">{progressLabel}</p>
         </div>
@@ -563,7 +600,7 @@ export default function QuizPage() {
             >
               <div className="mb-6 border-b border-dashed border-paper-line pb-4">
                 <h1 className="text-2xl text-paper-pencil">
-                  journal entry #{currentQuestion.id}:
+                  {copy.journalEntry(currentQuestion.id)}
                 </h1>
               </div>
 
@@ -573,7 +610,7 @@ export default function QuizPage() {
 
               <div className="relative mt-6 flex min-h-0 flex-1 flex-col">
                 <label htmlFor="journal-answer" className="sr-only">
-                  Your answer
+                  {copy.answerLabel}
                 </label>
                 <div
                   className="flex min-h-0 flex-1 rounded-sm border border-paper-pencil/25 bg-paper/80 shadow-inner"
@@ -588,14 +625,14 @@ export default function QuizPage() {
                     onKeyDown={handleTextareaKeyDown}
                     rows={flipBook ? 10 : 8}
                     className="min-h-0 w-full flex-1 resize-none border-0 bg-transparent px-3 py-2 text-xl leading-[28px] text-paper-ink outline-none ring-0 placeholder:text-paper-pencil/50 focus:ring-0 sm:px-4 sm:text-2xl"
-                    placeholder="Sometimes I feel like..."
+                    placeholder={copy.answerPlaceholder}
                     spellCheck
                   />
                 </div>
               </div>
 
               <div className="mt-5 flex flex-wrap gap-2">
-                {questions.map((q, i) => (
+                {questionList.map((q, i) => (
                   <button
                     key={q.id}
                     type="button"
@@ -608,7 +645,7 @@ export default function QuizPage() {
                           ? "bg-paper-pencil/50"
                           : "bg-paper-cream"
                     } disabled:opacity-50`}
-                    aria-label={`Go to question ${q.id}`}
+                    aria-label={copy.goToQuestion(q.id)}
                   />
                 ))}
               </div>
@@ -622,38 +659,74 @@ export default function QuizPage() {
                 </p>
               ) : null}
 
-              <div className="mt-8 flex flex-wrap items-center justify-between gap-4 border-t border-dashed border-paper-line pt-6">
+              <div
+                className={`relative mt-8 flex flex-wrap justify-between gap-4 border-t border-dashed border-paper-line pt-6 ${
+                  isLastQuestion ? "min-h-[8.25rem] items-end" : "items-center"
+                }`}
+              >
                 <button
                   type="button"
                   onClick={goBack}
                   disabled={displayIndex === 0 || isSubmitting || pageTurnLocked}
                   className="rounded-full border-2 border-paper-pencil/50 px-5 py-2 text-xl text-paper-muted transition enabled:hover:border-paper-ink enabled:hover:text-paper-ink disabled:cursor-not-allowed disabled:opacity-40"
                 >
-                  ← last page
+                  ← {copy.lastPage}
                 </button>
 
                 {isLastQuestion ? (
-                  <div className="flex flex-col items-end gap-3">
-                    <label className="flex max-w-xs items-center gap-3 text-right text-lg leading-snug text-paper-muted">
-                      <span>Let my partner see my original answer</span>
-                      <input
-                        type="checkbox"
-                        checked={includeOriginalAnswers}
-                        onChange={(event) =>
-                          setIncludeOriginalAnswers(event.target.checked)
-                        }
+                  <div className="grid flex-1 gap-3">
+                    <div className="contents">
+                      <div className="absolute left-0 top-5 grid w-[min(24rem,58%)] grid-cols-2 gap-0">
+                        <label className="grid gap-1 text-left text-sm leading-snug text-paper-muted">
+                          <span>{copy.to}</span>
+                          <input
+                            type="text"
+                            value={recipientName}
+                            onChange={(event) =>
+                              setRecipientName(event.target.value)
+                            }
+                            disabled={isSubmitting || pageTurnLocked}
+                            maxLength={60}
+                            className="h-9 min-w-0 border border-paper-pencil/20 bg-paper/65 px-3 text-sm text-paper-ink outline-none placeholder:text-paper-pencil/45 focus:border-paper-ink disabled:opacity-50 sm:text-base"
+                            placeholder={copy.recipientPlaceholder}
+                          />
+                        </label>
+                        <label className="grid gap-1 text-left text-sm leading-snug text-paper-muted">
+                          <span>{copy.from}</span>
+                          <input
+                            type="text"
+                            value={senderName}
+                            onChange={(event) => setSenderName(event.target.value)}
+                            disabled={isSubmitting || pageTurnLocked}
+                            maxLength={60}
+                            className="h-9 min-w-0 border border-l-0 border-paper-pencil/20 bg-paper/65 px-3 text-sm text-paper-ink outline-none placeholder:text-paper-pencil/45 focus:border-paper-ink disabled:opacity-50 sm:text-base"
+                            placeholder={copy.senderPlaceholder}
+                          />
+                        </label>
+                      </div>
+                      <label className="absolute right-0 top-5 flex max-w-[9rem] items-center gap-2 text-right text-sm leading-snug text-paper-muted">
+                        <span>{copy.includeOriginalAnswer}</span>
+                        <input
+                          type="checkbox"
+                          checked={includeOriginalAnswers}
+                          onChange={(event) =>
+                            setIncludeOriginalAnswers(event.target.checked)
+                          }
+                          disabled={isSubmitting || pageTurnLocked}
+                          className="h-5 w-5 shrink-0 accent-paper-ink disabled:opacity-50"
+                        />
+                      </label>
+                    </div>
+                    <div className="flex items-center justify-end">
+                      <button
+                        type="button"
+                        onClick={() => void submitAnswers()}
                         disabled={isSubmitting || pageTurnLocked}
-                        className="h-5 w-5 shrink-0 accent-paper-ink disabled:opacity-50"
-                      />
-                    </label>
-                    <button
-                      type="button"
-                      onClick={() => void submitAnswers()}
-                      disabled={isSubmitting || pageTurnLocked}
-                      className="rounded-full border-2 border-paper-ink bg-paper-ink px-6 py-2.5 text-xl text-paper-cream shadow-lift transition enabled:hover:-translate-y-0.5 enabled:hover:bg-paper-ink/90 disabled:cursor-not-allowed disabled:opacity-50"
-                    >
-                      {isSubmitting ? "Putting your letter together..." : "Finish and seal"}
-                    </button>
+                        className="max-w-[9.5rem] rounded-full border-2 border-paper-ink bg-paper-ink px-5 py-2 text-center text-lg leading-tight text-paper-cream shadow-lift transition enabled:hover:-translate-y-0.5 enabled:hover:bg-paper-ink/90 disabled:cursor-not-allowed disabled:opacity-50"
+                      >
+                        {isSubmitting ? copy.submitting : copy.finish}
+                      </button>
+                    </div>
                   </div>
                 ) : (
                   <button
@@ -662,7 +735,7 @@ export default function QuizPage() {
                     disabled={isSubmitting || pageTurnLocked}
                     className="rounded-full border-2 border-paper-ink bg-paper-cream px-6 py-2.5 text-xl text-paper-ink shadow-lift transition enabled:hover:-translate-y-0.5 enabled:hover:bg-paper-deep disabled:cursor-not-allowed disabled:opacity-50"
                   >
-                    {pageTurnLocked ? "Turning..." : "next page →"}
+                    {pageTurnLocked ? copy.turning : `${copy.nextPage} →`}
                   </button>
                 )}
               </div>
@@ -677,9 +750,11 @@ export default function QuizPage() {
                   >
                     <JournalPagePreview
                       answer={answers[previousQuestionIndex]}
+                      copy={copy}
                       isLastQuestion={previousQuestionIsLast}
                       question={previousQuestion}
                       questionIndex={previousQuestionIndex}
+                      questionsList={questionList}
                     />
                   </div>
                   <div
@@ -693,16 +768,21 @@ export default function QuizPage() {
                     <div className="book-backface-hidden absolute inset-0 border-paper-line/30 bg-paper-cream md:border-r md:border-dashed">
                       <JournalPagePreview
                         answer={answers[displayIndex]}
+                        copy={copy}
                         isLastQuestion={isLastQuestion}
                         question={currentQuestion}
                         questionIndex={displayIndex}
+                        questionsList={questionList}
                       />
                     </div>
                     <div
                       className="book-backface-hidden absolute inset-0"
                       style={{ transform: "rotateY(180deg)" }}
                     >
-                      <DoodlePage questionId={previousQuestion.id} />
+                      <DoodlePage
+                        caption={copy.doodleCaption}
+                        questionId={previousQuestion.id}
+                      />
                     </div>
                   </div>
                 </>
@@ -711,7 +791,10 @@ export default function QuizPage() {
 
             {flipBook ? (
               <div className="relative z-30 hidden h-full flex-1 basis-0 overflow-visible md:block [transform-style:preserve-3d]">
-                <DoodlePage questionId={nextQuestion.id} />
+                <DoodlePage
+                  caption={copy.doodleCaption}
+                  questionId={nextQuestion.id}
+                />
                 <div
                   ref={flipperRef}
                   className="book-preserve-3d absolute inset-0 will-change-transform"
@@ -720,7 +803,7 @@ export default function QuizPage() {
                   }}
                 >
                   <div className="book-backface-hidden absolute inset-0">
-                    <DoodlePage questionId={doodleId} />
+                    <DoodlePage caption={copy.doodleCaption} questionId={doodleId} />
                   </div>
                   <div
                     className="book-backface-hidden absolute inset-0 rounded-r-md border border-paper-pencil/15 bg-paper-cream shadow-[inset_0_0_40px_rgba(0,0,0,0.04)]"
@@ -729,9 +812,11 @@ export default function QuizPage() {
                   >
                     <JournalPagePreview
                       answer={answers[nextQuestionIndex]}
+                      copy={copy}
                       isLastQuestion={nextQuestionIsLast}
                       question={nextQuestion}
                       questionIndex={nextQuestionIndex}
+                      questionsList={questionList}
                     />
                   </div>
                 </div>
@@ -763,8 +848,8 @@ export default function QuizPage() {
             <div className="mt-6 rounded-sm border border-paper-pencil/20 bg-paper-cream/90 p-6 shadow-sheet">
               <p className="mb-4 text-center text-lg text-paper-pencil">
                 {wideBook
-                  ? "Page turns are simplified when reduced motion is on."
-                  : "On a wider screen this becomes an open book with a turning page."}
+                  ? copy.reducedMotion
+                  : copy.wideScreenNotice}
               </p>
               <div className="mx-auto flex max-w-xs justify-center">
                 <QuestionDoodle questionId={doodleId} />

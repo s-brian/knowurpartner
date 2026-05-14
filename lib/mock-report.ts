@@ -2,6 +2,7 @@ import type { Report } from "@/types/report";
 
 export const mockReport: Report = {
   id: "00000000-0000-4000-8000-000000000001",
+  outputLanguage: "english",
   title: "A letter for you, from what they shared",
   labels: {
     attachmentTendency: {

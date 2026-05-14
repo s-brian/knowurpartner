@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { generateReportWithGemini } from "@/lib/gemini";
+import { getLocalizedQuestions } from "@/lib/languages";
 import { questions } from "@/lib/questions";
 import { GenerateRequestSchema } from "@/lib/schema";
 import { supabase } from "@/lib/supabase";
@@ -40,7 +41,11 @@ export async function POST(request: Request) {
   let report: Report;
   try {
     console.error("Starting report generation request.");
-    report = await generateReportWithGemini(requestResult.data.answers);
+    report = await generateReportWithGemini(requestResult.data.answers, {
+      recipientName: requestResult.data.recipientName,
+      senderName: requestResult.data.senderName,
+      outputLanguage: requestResult.data.outputLanguage
+    });
   } catch (error) {
     const message =
       error instanceof Error ? error.message : "Unable to generate report.";
@@ -55,15 +60,32 @@ export async function POST(request: Request) {
   }
 
   if (requestResult.data.includeOriginalAnswers) {
+    const displayedQuestions = getLocalizedQuestions(
+      requestResult.data.outputLanguage
+    );
+
     report = {
       ...report,
       originalAnswers: questions.map((question, index) => ({
         questionId: question.id,
-        question: question.prompt,
+        question: displayedQuestions[index]?.prompt ?? question.prompt,
         answer: requestResult.data.answers[index] ?? ""
       }))
     };
   }
+
+  if (requestResult.data.recipientName || requestResult.data.senderName) {
+    report = {
+      ...report,
+      recipientName: requestResult.data.recipientName,
+      senderName: requestResult.data.senderName
+    };
+  }
+
+  report = {
+    ...report,
+    outputLanguage: requestResult.data.outputLanguage
+  };
 
   const { data, error } = await supabase
     .from("reports")

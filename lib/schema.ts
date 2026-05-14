@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { supportedLanguages } from "@/lib/languages";
 import type { Report } from "@/types/report";
 
 const AttachmentTendencySchema = z.enum([
@@ -22,11 +23,19 @@ const ConflictPatternSchema = z.enum([
   "collaborative"
 ]);
 const ConfidenceLevelSchema = z.enum(["low", "medium", "high"]);
+const SupportedLanguageSchema = z.enum(supportedLanguages);
 const fallbackCertaintyByConfidence = {
   low: 30,
   medium: 60,
   high: 82
 } as const;
+const OptionalNameSchema = z
+  .string()
+  .trim()
+  .min(1)
+  .max(60)
+  .optional()
+  .or(z.literal("").transform(() => undefined));
 
 const LabelWithConfidenceSchema = <TValue extends z.ZodEnum<[string, ...string[]]>>(
   valueSchema: TValue
@@ -45,11 +54,17 @@ export const GenerateRequestSchema = z.object({
   answers: z
     .array(z.string())
     .length(10, "Exactly 10 answers are required."),
-  includeOriginalAnswers: z.boolean().optional().default(false)
+  includeOriginalAnswers: z.boolean().optional().default(false),
+  recipientName: OptionalNameSchema,
+  senderName: OptionalNameSchema,
+  outputLanguage: SupportedLanguageSchema.optional().default("english")
 });
 
 export const ReportSchema: z.ZodType<Report, z.ZodTypeDef, unknown> = z.object({
   id: z.string(),
+  recipientName: OptionalNameSchema,
+  senderName: OptionalNameSchema,
+  outputLanguage: SupportedLanguageSchema.optional().default("english"),
   title: z.string(),
   labels: z.object({
     attachmentTendency: LabelWithConfidenceSchema(AttachmentTendencySchema),
