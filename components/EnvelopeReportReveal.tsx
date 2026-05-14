@@ -30,7 +30,7 @@ export function EnvelopeReportReveal({ children }: EnvelopeReportRevealProps) {
   const rightCapRef = useRef<SVGCircleElement>(null);
   const rightWrist = useRef<Point | null>(null);
   const hoverFrame = useRef<number | null>(null);
-  const openTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const openTimer = useRef<number | null>(null);
   const opened = state !== "closed";
 
   function toSvgPoint(pageX: number, pageY: number): Point {

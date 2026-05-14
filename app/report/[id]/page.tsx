@@ -102,6 +102,7 @@ export default async function ReportPage({ params }: ReportPageProps) {
   const inConflict = stripEmDashes(report.partnerCheatSheet.inConflictDo);
   const toShowLove = stripEmDashes(report.partnerCheatSheet.toShowLoveDo);
   const caveats = report.caveats.map(stripEmDashes);
+  const originalAnswers = report.originalAnswers ?? [];
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#d4c4b0] via-[#c9b8a4] to-[#b8a690] px-3 py-0 sm:px-6">
@@ -172,6 +173,9 @@ export default async function ReportPage({ params }: ReportPageProps) {
                     </RelationshipPatternValueReveal>
                     <span className="mt-1 block text-base font-light text-paper-pencil">
                       {formatConfidence(label.confidence)}
+                    </span>
+                    <span className="mt-1 block text-base font-light text-paper-pencil/80">
+                      Evidence strength: {label.certaintyPercent}%
                     </span>
                   </p>
                 </li>
@@ -268,6 +272,29 @@ export default async function ReportPage({ params }: ReportPageProps) {
                 </section>
               </div>
             </div>
+
+            {originalAnswers.length > 0 ? (
+              <section className="mt-8 border-t border-dashed border-paper-line pt-8">
+                <p className="text-2xl font-normal text-paper-muted">
+                  Their original answers
+                </p>
+                <div className="mt-5 grid gap-5 md:grid-cols-2">
+                  {originalAnswers.map((item) => (
+                    <article
+                      key={item.questionId}
+                      className="rounded-sm border border-paper-line/80 bg-paper-cream/60 px-4 py-3"
+                    >
+                      <h3 className="text-lg font-normal text-paper-muted">
+                        {item.questionId}. {item.question}
+                      </h3>
+                      <p className="mt-2 whitespace-pre-wrap font-light leading-relaxed">
+                        {item.answer || "No answer written."}
+                      </p>
+                    </article>
+                  ))}
+                </div>
+              </section>
+            ) : null}
 
             <LetterDivider />
 

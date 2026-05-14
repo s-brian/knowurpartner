@@ -6,19 +6,23 @@ export const mockReport: Report = {
   labels: {
     attachmentTendency: {
       value: "secure",
-      confidence: "medium"
+      confidence: "medium",
+      certaintyPercent: 64
     },
     primaryLoveLanguage: {
       value: "quality_time",
-      confidence: "high"
+      confidence: "high",
+      certaintyPercent: 82
     },
     energyStyle: {
       value: "ambiverted",
-      confidence: "medium"
+      confidence: "medium",
+      certaintyPercent: 58
     },
     conflictPattern: {
       value: "collaborative",
-      confidence: "medium"
+      confidence: "medium",
+      certaintyPercent: 61
     }
   },
   narrativeSections: {

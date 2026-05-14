@@ -24,6 +24,7 @@ export type ConfidenceLevel = "low" | "medium" | "high";
 export type LabelWithConfidence<TLabel extends string> = {
   value: TLabel;
   confidence: ConfidenceLevel;
+  certaintyPercent: number;
 };
 
 export type ReportLabels = {
@@ -49,6 +50,12 @@ export type PartnerCheatSheet = {
   toShowLoveDo: string;
 };
 
+export type OriginalAnswer = {
+  questionId: number;
+  question: string;
+  answer: string;
+};
+
 export type Report = {
   id: string;
   title: string;
@@ -56,4 +63,5 @@ export type Report = {
   narrativeSections: NarrativeSections;
   partnerCheatSheet: PartnerCheatSheet;
   caveats: string[];
+  originalAnswers?: OriginalAnswer[];
 };

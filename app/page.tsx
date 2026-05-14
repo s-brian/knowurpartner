@@ -243,7 +243,7 @@ export default function HomePage() {
                 I'll ask you 10 questions about how you love, how you fight, and how actions make you feel.
               </p>
               <p className="mt-4">
-               When you're done, you'll get a shareable guide on exactly how to love you.
+               When you're done, you'll get a shareable guide to understanding and loving you better.
               </p>
             </div>
 

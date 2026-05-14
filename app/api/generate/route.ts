@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
-import { mockReport } from "@/lib/mock-report";
-import { GenerateRequestSchema, ReportSchema } from "@/lib/schema";
+import { generateReportWithGemini } from "@/lib/gemini";
+import { questions } from "@/lib/questions";
+import { GenerateRequestSchema } from "@/lib/schema";
 import { supabase } from "@/lib/supabase";
 import type { Report } from "@/types/report";
 
@@ -16,55 +17,76 @@ export async function POST(request: Request) {
   if (!requestResult.success) {
     return NextResponse.json(
       {
-        error: "Invalid request body",
-        details: requestResult.error.flatten()
+        error: "Invalid request body"
       },
       { status: 400 }
     );
   }
 
-  const reportResult = ReportSchema.safeParse(mockReport);
+  if (!supabase) {
+    console.error(
+      "Supabase is not configured. Add SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY."
+    );
 
-  if (!reportResult.success) {
     return NextResponse.json(
       {
-        error: "Mock report failed validation",
-        details: reportResult.error.flatten()
+        error:
+          "Report storage is not configured yet. Add Supabase credentials and try again."
       },
       { status: 500 }
     );
   }
 
-  if (supabase) {
-    const { data, error } = await supabase
-      .from("reports")
-      .insert({ report_json: reportResult.data })
-      .select("id")
-      .single();
+  let report: Report;
+  try {
+    console.error("Starting report generation request.");
+    report = await generateReportWithGemini(requestResult.data.answers);
+  } catch (error) {
+    const message =
+      error instanceof Error ? error.message : "Unable to generate report.";
+    console.error("Report generation failed:", message);
 
-    if (error) {
-      return NextResponse.json(
-        {
-          error: "Unable to save report"
-        },
-        { status: 500 }
-      );
-    }
+    return NextResponse.json(
+      {
+        error: message
+      },
+      { status: 500 }
+    );
+  }
 
-    const response: GenerateResponse = {
-      id: data.id as string,
-      report: {
-        ...reportResult.data,
-        id: data.id as string
-      }
+  if (requestResult.data.includeOriginalAnswers) {
+    report = {
+      ...report,
+      originalAnswers: questions.map((question, index) => ({
+        questionId: question.id,
+        question: question.prompt,
+        answer: requestResult.data.answers[index] ?? ""
+      }))
     };
+  }
 
-    return NextResponse.json(response);
+  const { data, error } = await supabase
+    .from("reports")
+    .insert({ report_json: report })
+    .select("id")
+    .single();
+
+  if (error) {
+    console.error("Unable to save generated report:", error);
+    return NextResponse.json(
+      {
+        error: "Something went wrong generating your report. Please try again."
+      },
+      { status: 500 }
+    );
   }
 
   const response: GenerateResponse = {
-    id: reportResult.data.id,
-    report: reportResult.data
+    id: data.id as string,
+    report: {
+      ...report,
+      id: data.id as string
+    }
   };
 
   return NextResponse.json(response);

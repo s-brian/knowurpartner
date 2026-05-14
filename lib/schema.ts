@@ -22,22 +22,33 @@ const ConflictPatternSchema = z.enum([
   "collaborative"
 ]);
 const ConfidenceLevelSchema = z.enum(["low", "medium", "high"]);
+const fallbackCertaintyByConfidence = {
+  low: 30,
+  medium: 60,
+  high: 82
+} as const;
 
 const LabelWithConfidenceSchema = <TValue extends z.ZodEnum<[string, ...string[]]>>(
   valueSchema: TValue
 ) =>
   z.object({
     value: valueSchema,
-    confidence: ConfidenceLevelSchema
-  });
+    confidence: ConfidenceLevelSchema,
+    certaintyPercent: z.number().int().min(0).max(99).optional()
+  }).transform((label) => ({
+    ...label,
+    certaintyPercent:
+      label.certaintyPercent ?? fallbackCertaintyByConfidence[label.confidence]
+  }));
 
 export const GenerateRequestSchema = z.object({
   answers: z
     .array(z.string())
-    .length(10, "Exactly 10 answers are required.")
+    .length(10, "Exactly 10 answers are required."),
+  includeOriginalAnswers: z.boolean().optional().default(false)
 });
 
-export const ReportSchema: z.ZodType<Report> = z.object({
+export const ReportSchema: z.ZodType<Report, z.ZodTypeDef, unknown> = z.object({
   id: z.string(),
   title: z.string(),
   labels: z.object({
@@ -60,7 +71,16 @@ export const ReportSchema: z.ZodType<Report> = z.object({
     inConflictDo: z.string(),
     toShowLoveDo: z.string()
   }),
-  caveats: z.array(z.string())
+  caveats: z.array(z.string()),
+  originalAnswers: z
+    .array(
+      z.object({
+        questionId: z.number(),
+        question: z.string(),
+        answer: z.string()
+      })
+    )
+    .optional()
 });
 
 export type GenerateRequest = z.infer<typeof GenerateRequestSchema>;

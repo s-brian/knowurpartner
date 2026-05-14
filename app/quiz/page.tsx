@@ -1,72 +1,16 @@
 "use client";
 
 import { QuestionDoodle } from "@/components/QuestionDoodle";
+import { questions } from "@/lib/questions";
+import type { Question } from "@/lib/questions";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { flushSync } from "react-dom";
 import { useEffect, useMemo, useRef, useState } from "react";
 
-type Question = {
-  id: number;
-  prompt: string;
-};
-
 type GenerateResponse = {
   id: string;
 };
-
-const questions: Question[] = [
-  {
-    id: 1,
-    prompt:
-      "When you're upset or stressed in a relationship, what do you usually need from your partner?"
-  },
-  {
-    id: 2,
-    prompt:
-      "How do you typically respond when you feel like your partner is pulling away or becoming distant?"
-  },
-  {
-    id: 3,
-    prompt:
-      "Describe a moment you felt truly loved by a partner or someone close to you. What made it feel that way?"
-  },
-  {
-    id: 4,
-    prompt:
-      "What's something small a partner can do consistently that makes a big difference to how loved you feel?"
-  },
-  {
-    id: 5,
-    prompt:
-      "After a difficult or draining day, what does recharging look like for you and how much does your partner factor into that?"
-  },
-  {
-    id: 6,
-    prompt:
-      "Think of a recurring conflict or tension you've experienced in relationships. How does it usually start and how do you typically respond?"
-  },
-  {
-    id: 7,
-    prompt:
-      "When you and a partner disagree, what does resolution actually need to look like for you to feel okay again?"
-  },
-  {
-    id: 8,
-    prompt:
-      "What does feeling emotionally safe and secure in a relationship look like to you, both day to day and long term?"
-  },
-  {
-    id: 9,
-    prompt:
-      "What's something you wish partners understood about you that they often get wrong?"
-  },
-  {
-    id: 10,
-    prompt:
-      "What's something you're still learning about yourself in relationships?"
-  }
-];
 
 const LINE_STEP_PX = 28;
 const PAGE_TURN_DURATION_MS = 1467;
@@ -176,7 +120,7 @@ export default function QuizPage() {
   const pageTurnDirection = useRef<PageTurnDirection>("next");
   const pageTurnFrame = useRef<number | null>(null);
   const pageFlipAudio = useRef<HTMLAudioElement | null>(null);
-  const pageFlipSoundTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pageFlipSoundTimer = useRef<number | null>(null);
   const lastPageFlipSoundAt = useRef(0);
 
   const [wideBook, setWideBook] = useState(false);
@@ -187,6 +131,7 @@ export default function QuizPage() {
   const [answers, setAnswers] = useState<string[]>(
     Array.from({ length: questions.length }, () => "")
   );
+  const [includeOriginalAnswers, setIncludeOriginalAnswers] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -553,11 +498,14 @@ export default function QuizPage() {
         headers: {
           "Content-Type": "application/json"
         },
-        body: JSON.stringify({ answers })
+        body: JSON.stringify({ answers, includeOriginalAnswers })
       });
 
       if (!response.ok) {
-        throw new Error("Unable to generate report.");
+        const errorData = (await response.json().catch(() => null)) as {
+          error?: string;
+        } | null;
+        throw new Error(errorData?.error ?? "Unable to generate report.");
       }
 
       const data = (await response.json()) as GenerateResponse;
@@ -685,14 +633,28 @@ export default function QuizPage() {
                 </button>
 
                 {isLastQuestion ? (
-                  <button
-                    type="button"
-                    onClick={() => void submitAnswers()}
-                    disabled={isSubmitting || pageTurnLocked}
-                    className="rounded-full border-2 border-paper-ink bg-paper-ink px-6 py-2.5 text-xl text-paper-cream shadow-lift transition enabled:hover:-translate-y-0.5 enabled:hover:bg-paper-ink/90 disabled:cursor-not-allowed disabled:opacity-50"
-                  >
-                    {isSubmitting ? "Putting your letter together..." : "Finish and seal"}
-                  </button>
+                  <div className="flex flex-col items-end gap-3">
+                    <label className="flex max-w-xs items-center gap-3 text-right text-lg leading-snug text-paper-muted">
+                      <span>Let my partner see my original answer</span>
+                      <input
+                        type="checkbox"
+                        checked={includeOriginalAnswers}
+                        onChange={(event) =>
+                          setIncludeOriginalAnswers(event.target.checked)
+                        }
+                        disabled={isSubmitting || pageTurnLocked}
+                        className="h-5 w-5 shrink-0 accent-paper-ink disabled:opacity-50"
+                      />
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => void submitAnswers()}
+                      disabled={isSubmitting || pageTurnLocked}
+                      className="rounded-full border-2 border-paper-ink bg-paper-ink px-6 py-2.5 text-xl text-paper-cream shadow-lift transition enabled:hover:-translate-y-0.5 enabled:hover:bg-paper-ink/90 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      {isSubmitting ? "Putting your letter together..." : "Finish and seal"}
+                    </button>
+                  </div>
                 ) : (
                   <button
                     type="button"
