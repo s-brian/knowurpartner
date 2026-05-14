@@ -11,3 +11,4 @@ pnpm-debug.log*
 next-dev.log
 next-dev.err.log
 tsconfig.tsbuildinfo
+AGENTS.md
